@@ -269,7 +269,7 @@ impl InputState {
         pixels_per_point: f32,
         options: &crate::Options,
     ) -> Self {
-        crate::profile_function!();
+        profiling::function_scope!();
 
         let time = new.time.unwrap_or(self.time + new.predicted_dt as f64);
         let unstable_dt = (time - self.time) as f32;
@@ -1303,7 +1303,7 @@ impl PointerState {
         self.started_decidedly_dragging
             && !self.has_moved_too_much_for_a_click
             && self.button_down(PointerButton::Primary)
-            && self.press_start_time.map_or(false, |press_start_time| {
+            && self.press_start_time.is_some_and(|press_start_time| {
                 self.time - press_start_time > self.input_options.max_click_duration
             })
     }

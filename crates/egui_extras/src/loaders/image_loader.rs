@@ -19,7 +19,10 @@ impl ImageCrateLoader {
 }
 
 fn is_supported_uri(uri: &str) -> bool {
-    let Some(ext) = Path::new(uri).extension().and_then(|ext| ext.to_str()) else {
+    let Some(ext) = Path::new(uri)
+        .extension()
+        .and_then(|ext| ext.to_str().map(|ext| ext.to_lowercase()))
+    else {
         // `true` because if there's no extension, assume that we support it
         return true;
     };
@@ -76,6 +79,12 @@ impl ImageLoader for ImageCrateLoader {
                                 detected_format: Some(mime),
                             });
                         }
+                    }
+
+                    if bytes.starts_with(b"version https://git-lfs") {
+                        return Err(LoadError::FormatNotSupported {
+                            detected_format: Some("git-lfs".to_owned()),
+                        });
                     }
 
                     // (3)

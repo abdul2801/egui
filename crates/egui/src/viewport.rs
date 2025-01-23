@@ -188,7 +188,7 @@ impl std::fmt::Debug for IconData {
 
 impl From<IconData> for epaint::ColorImage {
     fn from(icon: IconData) -> Self {
-        crate::profile_function!();
+        profiling::function_scope!();
         let IconData {
             rgba,
             width,
@@ -200,7 +200,7 @@ impl From<IconData> for epaint::ColorImage {
 
 impl From<&IconData> for epaint::ColorImage {
     fn from(icon: &IconData) -> Self {
-        crate::profile_function!();
+        profiling::function_scope!();
         let IconData {
             rgba,
             width,
@@ -936,13 +936,16 @@ pub enum ResizeDirection {
 
 /// An output [viewport](crate::viewport)-command from egui to the backend, e.g. to change the window title or size.
 ///
-///  You can send a [`ViewportCommand`] to the viewport with [`Context::send_viewport_cmd`].
+/// You can send a [`ViewportCommand`] to the viewport with [`Context::send_viewport_cmd`].
 ///
 /// See [`crate::viewport`] for how to build new viewports (native windows).
 ///
 /// All coordinates are in logical points.
 ///
-/// This is essentially a way to diff [`ViewportBuilder`].
+/// [`ViewportCommand`] is essentially a way to diff [`ViewportBuilder`]s.
+///
+/// Only commands specific to a viewport are part of [`ViewportCommand`].
+/// Other commands should be put in [`crate::OutputCommand`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub enum ViewportCommand {
@@ -1056,7 +1059,7 @@ pub enum ViewportCommand {
     /// Enable mouse pass-through: mouse clicks pass through the window, used for non-interactable overlays.
     MousePassthrough(bool),
 
-    /// Take a screenshot.
+    /// Take a screenshot of the next frame after this.
     ///
     /// The results are returned in [`crate::Event::Screenshot`].
     Screenshot(crate::UserData),

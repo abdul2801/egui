@@ -3,6 +3,7 @@
 
 use std::{any::Any, hash::Hash, sync::Arc};
 
+use emath::GuiRounding as _;
 use epaint::mutex::RwLock;
 
 use crate::{
@@ -301,7 +302,7 @@ impl Ui {
             min_rect: placer.min_rect(),
             max_rect: placer.max_rect(),
         };
-        let child_ui = Ui {
+        let mut child_ui = Ui {
             id: stable_id,
             unique_id,
             next_auto_id_salt,
@@ -315,6 +316,10 @@ impl Ui {
             sense,
             min_rect_already_remembered: false,
         };
+
+        if disabled {
+            child_ui.disable();
+        }
 
         // Register in the widget stack early, to ensure we are behind all widgets we contain:
         let start_rect = Rect::NOTHING; // This will be overwritten when `remember_min_rect` is called
@@ -476,6 +481,12 @@ impl Ui {
     #[inline]
     pub fn painter(&self) -> &Painter {
         &self.painter
+    }
+
+    /// Number of physical pixels for each logical UI point.
+    #[inline]
+    pub fn pixels_per_point(&self) -> f32 {
+        self.painter.pixels_per_point()
     }
 
     /// If `false`, the [`Ui`] does not allow any interaction and
@@ -712,7 +723,9 @@ impl Ui {
         self.painter().layer_id()
     }
 
-    /// The height of text of this text style
+    /// The height of text of this text style.
+    ///
+    /// Returns a value rounded to [`emath::GUI_ROUNDING`].
     pub fn text_style_height(&self, style: &TextStyle) -> f32 {
         self.fonts(|f| f.row_height(&style.resolve(self.style())))
     }
@@ -1291,6 +1304,7 @@ impl Ui {
     /// Ignore the layout of the [`Ui`]: just put my widget here!
     /// The layout cursor will advance to past this `rect`.
     pub fn allocate_rect(&mut self, rect: Rect, sense: Sense) -> Response {
+        let rect = rect.round_ui();
         let id = self.advance_cursor_after_rect(rect);
         self.interact(rect, id, sense)
     }
@@ -1298,6 +1312,8 @@ impl Ui {
     /// Allocate a rect without interacting with it.
     pub fn advance_cursor_after_rect(&mut self, rect: Rect) -> Id {
         debug_assert!(!rect.any_nan());
+        let rect = rect.round_ui();
+
         let item_spacing = self.spacing().item_spacing;
         self.placer.advance_after_rects(rect, rect, item_spacing);
         register_rect(self, rect);
@@ -1755,12 +1771,14 @@ impl Ui {
     /// Add extra space before the next widget.
     ///
     /// The direction is dependent on the layout.
-    /// This will be in addition to the [`crate::style::Spacing::item_spacing`].
+    ///
+    /// This will be in addition to the [`crate::style::Spacing::item_spacing`]
+    /// that is always added, but `item_spacing` won't be added _again_ by `add_space`.
     ///
     /// [`Self::min_rect`] will expand to contain the space.
     #[inline]
     pub fn add_space(&mut self, amount: f32) {
-        self.placer.advance_cursor(amount);
+        self.placer.advance_cursor(amount.round_ui());
     }
 
     /// Show some text.
@@ -2061,7 +2079,7 @@ impl Ui {
         // only touch `*radians` if we actually changed the degree value
         if degrees != radians.to_degrees() {
             *radians = degrees.to_radians();
-            response.changed = true;
+            response.mark_changed();
         }
 
         response
@@ -2084,7 +2102,7 @@ impl Ui {
         // only touch `*radians` if we actually changed the value
         if taus != *radians / TAU {
             *radians = taus * TAU;
-            response.changed = true;
+            response.mark_changed();
         }
 
         response
@@ -2375,9 +2393,7 @@ impl Ui {
 
             let stroke = self.visuals().widgets.noninteractive.bg_stroke;
             let left_top = child_rect.min - 0.5 * indent * Vec2::X;
-            let left_top = self.painter().round_pos_to_pixel_center(left_top);
             let left_bottom = pos2(left_top.x, child_ui.min_rect().bottom() - 2.0);
-            let left_bottom = self.painter().round_pos_to_pixel_center(left_bottom);
 
             if left_vline {
                 // draw a faint line on the left to mark the indented section
@@ -3014,7 +3030,7 @@ impl Drop for Ui {
 /// Show this rectangle to the user if certain debug options are set.
 #[cfg(debug_assertions)]
 fn register_rect(ui: &Ui, rect: Rect) {
-    use emath::Align2;
+    use emath::{Align2, GuiRounding};
 
     let debug = ui.style().debug;
 
@@ -3027,16 +3043,16 @@ fn register_rect(ui: &Ui, rect: Rect) {
                 .text(p0, Align2::LEFT_TOP, "Unaligned", font_id, color);
         };
 
-        if rect.left().fract() != 0.0 {
+        if rect.left() != rect.left().round_ui() {
             unaligned_line(rect.left_top(), rect.left_bottom());
         }
-        if rect.right().fract() != 0.0 {
+        if rect.right() != rect.right().round_ui() {
             unaligned_line(rect.right_top(), rect.right_bottom());
         }
-        if rect.top().fract() != 0.0 {
+        if rect.top() != rect.top().round_ui() {
             unaligned_line(rect.left_top(), rect.right_top());
         }
-        if rect.bottom().fract() != 0.0 {
+        if rect.bottom() != rect.bottom().round_ui() {
             unaligned_line(rect.left_bottom(), rect.right_bottom());
         }
     }

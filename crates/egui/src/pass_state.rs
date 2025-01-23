@@ -1,4 +1,4 @@
-use ahash::{HashMap, HashSet};
+use ahash::HashMap;
 
 use crate::{id::IdSet, style, Align, Id, IdMap, LayerId, Rangef, Rect, Vec2, WidgetRects};
 
@@ -34,7 +34,7 @@ pub struct PerLayerState {
     /// Is there any open popup (menus, combo-boxes, etc)?
     ///
     /// Does NOT include tooltips.
-    pub open_popups: HashSet<Id>,
+    pub open_popups: IdSet,
 
     /// Which widget is showing a tooltip (if any)?
     ///
@@ -248,7 +248,7 @@ impl Default for PassState {
 
 impl PassState {
     pub(crate) fn begin_pass(&mut self, screen_rect: Rect) {
-        crate::profile_function!();
+        profiling::function_scope!();
         let Self {
             used_ids,
             widgets,

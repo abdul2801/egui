@@ -31,7 +31,7 @@ rustdoc-args = ["--generate-link-to-definition"]
 default = ["dep:mime_guess2"]
 
 ## Shorthand for enabling the different types of image loaders (`file`, `http`, `image`, `svg`).
-all_loaders = ["file", "http", "image", "svg", "gif"]
+all_loaders = ["file", "http", "image", "svg", "gif", "webp"]
 
 ## Enable [`DatePickerButton`] widget.
 datepicker = ["chrono"]
@@ -41,6 +41,9 @@ file = ["dep:mime_guess2"]
 
 ## Support loading gif images.
 gif = ["image", "image/gif"]
+
+## Support loading webp images.
+webp = ["image", "image/webp"]
 
 ## Add support for loading images via HTTP.
 http = ["dep:ehttp"]
@@ -52,11 +55,6 @@ http = ["dep:ehttp"]
 ## image = { version = "0.25", features = ["jpeg", "png"] } # Add the types you want support for
 ## ```
 image = ["dep:image"]
-
-## Enable profiling with the [`puffin`](https://docs.rs/puffin) crate.
-##
-## Only enabled on native, because of the low resolution (1ms) of clocks in browsers.
-puffin = ["dep:puffin", "egui/puffin"]
 
 ## Derive serde Serialize/Deserialize on stateful structs
 serde = ["egui/serde", "dep:serde"]
@@ -74,6 +72,7 @@ egui = { workspace = true, default-features = false }
 ahash.workspace = true
 enum-map = { version = "2", features = ["serde"] }
 log.workspace = true
+profiling.workspace = true
 
 #! ### Optional dependencies
 
@@ -96,7 +95,6 @@ image = { workspace = true, optional = true }
 # file feature
 mime_guess2 = { version = "2", optional = true, default-features = false }
 
-puffin = { workspace = true, optional = true }
 
 syntect = { version = "5", optional = true, default-features = false, features = [
   "default-fancy",

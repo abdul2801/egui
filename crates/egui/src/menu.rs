@@ -406,11 +406,8 @@ impl MenuRoot {
                 }
             }
 
-            if let Some(transform) = button
-                .ctx
-                .memory(|m| m.layer_transforms.get(&button.layer_id).copied())
-            {
-                pos = transform * pos;
+            if let Some(to_global) = button.ctx.layer_transform_to_global(button.layer_id) {
+                pos = to_global * pos;
             }
 
             return MenuResponse::Create(pos, id);
@@ -682,7 +679,7 @@ impl MenuState {
             || self
                 .sub_menu
                 .as_ref()
-                .map_or(false, |(_, sub)| sub.read().area_contains(pos))
+                .is_some_and(|(_, sub)| sub.read().area_contains(pos))
     }
 
     fn next_entry_index(&mut self) -> usize {
